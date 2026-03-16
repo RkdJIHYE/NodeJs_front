@@ -28,9 +28,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <header>
-          <nav>
+          <nav className="flex gap-4">
             <a href ="/">메인</a>
-            <br></br>
             <a href ="/list">목록</a>
           </nav>
         </header>
