@@ -1,6 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 export default function Write() {
+
+    const router = useRouter();
 
     const onSubmitHandler = (e: any) => {
         e.preventDefault();;
@@ -32,22 +36,22 @@ export default function Write() {
             })
         })
             .then(response => response.json())
-            .then(data => {
-                console.log(data);
-            })
+            .then(rs => {
+                alert(rs.msg);
+                // 글 상세 페이지로 이동
+                router.push(`/posts/${rs.data.postDto.id}`)
+            });
     }
 
     return (
         <>
             <h1>글 작성</h1>
 
-
             <form action="" onSubmit={onSubmitHandler} className="flex flex-col gap-4">
                 <input type="text" name="title" className="border-1 rounded p-2" placeholder="제목을 입력해주세요" />
                 <textarea rows={10} name="content" className="border-1 rounded p-2" placeholder="내용을 입력해주세요"></textarea>
                 <input type="submit" value="작성" className="border-1 rounded p-2" />
             </form>
-
         </>
     )
 }
