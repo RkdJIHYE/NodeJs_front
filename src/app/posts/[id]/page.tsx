@@ -12,13 +12,18 @@ export default function Detail() {
     const [post, setPost] = useState<PostDto | null>(null);
     const [postComments, setPostComments] = useState<PostCommentDto[] | null>
         (null);
+    const [isError, setIsError] = useState(false);
     const { id: postId } = useParams();
     const router = useRouter();
 
     useEffect(() => {
 
         fetchApi(`/api/v1/posts/${postId}`)
-            .then(data => setPost(data));
+            .then(data => setPost(data))
+            .catch((e) => {
+                console.log(e);
+                setIsError(true);
+            })
 
         fetchApi(`/api/v1/posts/${postId}/comments`)
             .then(setPostComments);
@@ -51,6 +56,7 @@ export default function Detail() {
         });
     };
 
+    if (isError) return <div>문제 발생</div>
     return (
         <>
             {post === null
@@ -72,34 +78,48 @@ export default function Detail() {
                             }}
                             className="border-1 rounded p-2 bg-red-500">삭제</button>
                     </div>
-                    <h2 className="p-2">댓글 목록</h2>
-
-                    {postComments === null && <div>Loading...</div>}
-                    {postComments !== null && postComments.length === 0 && (
-                        <div>댓글이 없습니다.</div>
-                    )}
-
-                    {postComments !== null && postComments.length > 0 && (
-                        <ul className="flex flex-col gap-2">
-                            {postComments.map((postComment) => (
-                                <li key={postComment.id} className="flex gap-2 items-center">
-                                    <span>{postComment.id} : </span>
-                                    <span>{postComment.content}</span>
-                                    <button className="border-2 p-2 rounded">수정</button>
-                                    <button
-                                        className="border-2 p-2 rounded"
-                                        onClick={() => {
-                                            deletePostComment(postComment.id);
-                                        }}
-                                    >
-                                        삭제
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    <PostCommentList
+                        postComments={postComments}
+                        deletePostComment={deletePostComment}
+                    />
                 </div>
             }
+        </>
+    )
+}
+
+function PostCommentList({ postComments, deletePostComment }: {
+    postComments: PostCommentDto[] | null,
+    deletePostComment: (commentId: number) => void
+}) {
+    return (
+        <>
+            <h2 className="p-2">댓글 목록</h2>
+
+            {postComments === null && <div>Loading...</div>}
+            {postComments !== null && postComments.length === 0 && (
+                <div>댓글이 없습니다.</div>
+            )}
+
+            {postComments !== null && postComments.length > 0 && (
+                <ul className="flex flex-col gap-2">
+                    {postComments.map((postComment) => (
+                        <li key={postComment.id} className="flex gap-2 items-center">
+                            <span>{postComment.id} : </span>
+                            <span>{postComment.content}</span>
+                            <button className="border-2 p-2 rounded">수정</button>
+                            <button
+                                className="border-2 p-2 rounded"
+                                onClick={() => {
+                                    deletePostComment(postComment.id);
+                                }}
+                            >
+                                삭제
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </>
     )
 }
