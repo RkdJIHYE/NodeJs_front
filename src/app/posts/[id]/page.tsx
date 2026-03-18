@@ -56,6 +56,26 @@ export default function Detail() {
         });
     };
 
+    const onModifySuccess = (id: number, contentValue: string) => {
+        if (postComments === null) return;
+
+        // 1
+        // fetchApi(`/api/v1/posts/${postId}/comments`)
+        //     .then((rs) => {
+        //         console.log(rs);
+        //         setPostComments(rs);
+        //     })
+
+        // 2
+        setPostComments(
+            postComments.map((postComment) =>
+                postComment.id === id
+                    ? { ...postComment, content: contentValue }
+                    : postComment
+            )
+        );
+    };
+
     if (isError) return <div>문제 발생</div>
     return (
         <>
@@ -79,8 +99,10 @@ export default function Detail() {
                             className="border-1 rounded p-2 bg-red-500">삭제</button>
                     </div>
                     <PostCommentList
+                        postId={post.id}
                         postComments={postComments}
                         deletePostComment={deletePostComment}
+                        onModifySuccess={onModifySuccess}
                     />
                 </div>
             }
@@ -88,9 +110,11 @@ export default function Detail() {
     )
 }
 
-function PostCommentList({ postComments, deletePostComment }: {
+function PostCommentList({ postId, postComments, deletePostComment, onModifySuccess }: {
+    postId: number,
     postComments: PostCommentDto[] | null,
-    deletePostComment: (commentId: number) => void
+    deletePostComment: (commentId: number) => void,
+    onModifySuccess: (commentId: number, content: string) => void
 }) {
     return (
         <>
@@ -104,22 +128,84 @@ function PostCommentList({ postComments, deletePostComment }: {
             {postComments !== null && postComments.length > 0 && (
                 <ul className="flex flex-col gap-2">
                     {postComments.map((postComment) => (
-                        <li key={postComment.id} className="flex gap-2 items-center">
-                            <span>{postComment.id} : </span>
-                            <span>{postComment.content}</span>
-                            <button className="border-2 p-2 rounded">수정</button>
-                            <button
-                                className="border-2 p-2 rounded"
-                                onClick={() => {
-                                    deletePostComment(postComment.id);
-                                }}
-                            >
-                                삭제
-                            </button>
-                        </li>
+                        <PostCommentListItem
+                            key={postComment.id}
+                            postId={postId}
+                            postComment={postComment}
+                            deletePostComment={deletePostComment}
+                            onModifySuccess={onModifySuccess}
+                        />
                     ))}
                 </ul>
             )}
         </>
+    )
+}
+
+function PostCommentListItem({ postId, postComment, deletePostComment, onModifySuccess }: {
+    postId: number,
+    postComment: PostCommentDto,
+    deletePostComment: (commentId: number) => void,
+    onModifySuccess: (commentId: number, content: string) => void
+}) {
+
+    const [modifyMode, setModifyMode] = useState(false);
+
+    const toggleModifyMode = () => {
+        setModifyMode(!modifyMode);
+    };
+
+    const handleModifySubmit = (e: any) => {
+        e.preventDefault();
+        const form = e.target;
+        const contentInput = form.content;
+        const contentValue = contentInput.value;
+
+        fetchApi(`/api/v1/posts/${postId}/comments/${postComment.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ content: contentValue }),
+        }).then((data) => {
+            alert(data.msg);
+            toggleModifyMode();
+            // 1번 방식 댓글 목록을 다시 가져온다.
+            //  - 장: 데이터 정합성.
+            //  - 단: 성능
+            // 2번 방식 리액트 상태값을 변경
+            //  - 장: 빠르게 적용
+            //  - 단: db와 ui 상태가 일치 하지 않을 수 있음.
+
+            onModifySuccess(postComment.id, contentValue);
+        });
+    };
+
+    return (
+        <li key={postComment.id} className="flex gap-2 items-center">
+            <span>{postComment.id} : </span>
+            {modifyMode && (
+                <form className="flex gap-2" onSubmit={handleModifySubmit}>
+                    <input
+                        type="text"
+                        name="content"
+                        defaultValue={postComment.content}
+                        className="border-2 p-2 rounded"
+                    />
+                    <button className="border-2 p-2 rounded" type="submit">
+                        저장
+                    </button>
+                </form>
+            )}
+            {!modifyMode && <span>{postComment.content}</span>}
+            <button className="border-2 p-2 rounded" onClick={toggleModifyMode}>
+                {modifyMode ? "수정취소" : "수정"}
+            </button>
+            <button
+                className="border-2 p-2 rounded"
+                onClick={() => {
+                    deletePostComment(postComment.id);
+                }}
+            >
+                삭제
+            </button>
+        </li>
     )
 }
